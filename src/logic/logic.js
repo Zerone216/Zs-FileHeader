@@ -67,9 +67,9 @@ const lineSpaceFn = (editor, config) => {
     // 判断当前行有没有内容 决定选择当前行还是下一行的长度
     if (
       lineProperty.isEmptyOrWhitespace &&
-    editor.document.lineCount !== activeLine + 1
+      editor.document.lineCount !== activeLine + 1
     ) {
-    // 选择下一行
+      // 选择下一行
       nextLine = activeLine + 1
       lineProperty = editor.document.lineAt(nextLine)
       lineSpace = lineProperty.firstNonWhitespaceCharacterIndex
@@ -84,7 +84,7 @@ const lineSpaceFn = (editor, config) => {
 }
 
 // 多行的生成行号，多行文本合并
-function getMoreLine (cursorModeInternal, editor, moreLineObj) {
+function getMoreLine(cursorModeInternal, editor, moreLineObj) {
   const lineProperty = getMultilineText(editor, moreLineObj)
   let activeLine = getFirstLineNoEmpty(editor, moreLineObj)
   let lineSpace = editor.document.lineAt(activeLine).firstNonWhitespaceCharacterIndex
@@ -98,7 +98,7 @@ function getMoreLine (cursorModeInternal, editor, moreLineObj) {
   return [lineSpace, activeLine, undefined, lineProperty]
 }
 // 获取最后一行不为空的行数
-function getEndLineNoEmpty (editor, moreLineObj) {
+function getEndLineNoEmpty(editor, moreLineObj) {
   const { startObj, endObj } = moreLineObj
   const lineNumber = endObj.line
   for (let i = endObj.line; i >= startObj.line; i--) {
@@ -109,7 +109,7 @@ function getEndLineNoEmpty (editor, moreLineObj) {
 }
 
 // 获取第一行不为空的行数
-function getFirstLineNoEmpty (editor, moreLineObj) {
+function getFirstLineNoEmpty(editor, moreLineObj) {
   const { startObj, endObj } = moreLineObj
   const lineNumber = startObj.line
   for (let i = startObj.line; i <= endObj.line; i++) {
@@ -120,7 +120,7 @@ function getFirstLineNoEmpty (editor, moreLineObj) {
 }
 
 // 多行合并成一行
-function getMultilineText (editor, moreLineObj) {
+function getMultilineText(editor, moreLineObj) {
   const { startObj, endObj } = moreLineObj
   let text = ''
   for (let i = startObj.line; i <= endObj.line; i++) {
@@ -133,7 +133,7 @@ function getMultilineText (editor, moreLineObj) {
 }
 
 // 选择多行判断
-function isMoreLine (editor) {
+function isMoreLine(editor) {
   const selectionsArr = editor.selections
   const selectItem = selectionsArr[0]
   const startObj = selectItem.start
@@ -148,7 +148,7 @@ function isMoreLine (editor) {
  * 修改时间，描述等配置值
  * @param {object} data 配置项
  */
-function changeDataOptionFn (data, config) {
+function changeDataOptionFn(data, config) {
   data = noEditorValue(data, config)
   data = logicUtil.changePrototypeNameFn(data, config) // 更改字段，不改变他们的顺序
   data = changeTplValue(data, config) // 修改模板设置的值
@@ -157,7 +157,7 @@ function changeDataOptionFn (data, config) {
 }
 
 // Do not edit 的值
-function noEditorValue (data, config) {
+function noEditorValue(data, config) {
   let time = new Date().format()
   // 文件创建时间
   if (config.configObj.createFileTime) {
@@ -199,7 +199,7 @@ function noEditorValue (data, config) {
  * @description: 如果value配置了，获取并设置git用户名、git用户邮箱
  * @return {string} value 配置项
  */
-function setGitConfig (value) {
+function setGitConfig(value) {
   let res = ''
   try {
     if (value && value.indexOf('git config') !== -1) {
@@ -214,6 +214,14 @@ function setGitConfig (value) {
       if (value === 'git config user.name && git config user.email') {
         res = `${userName} ${userEmail}`
       }
+      if (value === 'git config repo.link') {
+        var repoLink = runExecSync('git remote -v').trim()
+        if (repoLink) {
+          res = repoLink.split('\n')[0].split('\t')[1].split(' ')[0]
+        } else {
+          res = ""
+        }
+      }
     }
   } catch (err) {
     res = `error: ${value} & please set dead value or install git`
@@ -221,24 +229,27 @@ function setGitConfig (value) {
 
   return res || value
 }
-
 // 修改模板设置的值
-function changeTplValue (data) {
+function changeTplValue(data) {
   const newData = {}
   Object.keys(data).forEach(key => {
     newData[key] = writeValue(data[key])
   })
-  function writeValue (value) {
+  function writeValue(value) {
     // now_year 全局替换
     let res = value.replace(
       /\$\{now_year}/g,
       new Date().format('YYYY')
+    ).replace(
+      /\$\{now_time}/g,
+      new Date().format('YYYY-MM-DD HH:mm:ss')
     )
     // 获取用户名和邮箱
     const templateObj = {
       '${git_name_email}': 'git config user.name && git config user.email',
       '${git_name}': 'git config user.name',
-      '${git_email}': 'git config user.email'
+      '${git_email}': 'git config user.email',
+      '${git_repo}': 'git config repo.link'
     }
     Object.keys(templateObj).forEach(key => {
       res = res.replace(templateObj[key], setGitConfig(templateObj[key]))
